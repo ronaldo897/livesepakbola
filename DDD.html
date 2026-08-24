@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Hasil Sepak Bola (CRUD)</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #1a252f;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        /* Form Styling */
+        .form-card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .form-card h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #1a252f;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .form-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-primary { background: #27ae60; color: white; }
+        .btn-primary:hover { background: #219150; }
+        
+        .btn-cancel { background: #7f8c8d; color: white; display: none; }
+        .btn-cancel:hover { background: #6c7a7d; }
+
+        .btn-edit { background: #f39c12; color: white; padding: 6px 12px; font-size: 0.8rem; }
+        .btn-edit:hover { background: #d68910; }
+
+        .btn-delete { background: #e74c3c; color: white; padding: 6px 12px; font-size: 0.8rem; }
+        .btn-delete:hover { background: #c0392b; }
+
+        /* Match Card Styling */
+        .match-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .match-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 30%;
+        }
+
+        .team img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: contain;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+        }
+
+        .team-name { font-weight: bold; text-align: center; font-size: 0.95rem; }
+
+        .score-board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 35%;
+        }
+
+        .score { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        
+        .status {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+        }
+
+        .status.ft { background-color: #27ae60; color: white; }
+        .status.live { background-color: #e74c3c; color: white; }
+
+        .date { font-size: 0.8rem; color: #7f8c8d; margin-top: 4px; }
+
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .score { font-size: 1.5rem; }
+            .team img { width: 40px; height: 40px; }
+            .team-name { font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⚽ Panel Kelola Hasil Pertandingan</h1>
+    </header>
+
+    <div class="container">
+        <!-- Form Tambah / Edit Match -->
+        <div class="form-card">
+            <h2 id="form-title">Tambah Pertandingan Baru</h2>
+            <form id="match-form" onsubmit="handleFormSubmit(event)">
+                <input type="hidden" id="edit-index" value="-1">
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="home-team">Tim Tuan Rumah (Home)</label>
+                        <input type="text" id="home-team" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="home-logo">Foto Logo Home</label>
+                        <input type="file" id="home-logo" accept="image/*">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="home-score">Skor Home</label>
+                        <input type="number" id="home-score" min="0" value="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="away-team">Tim Tamu (Away)</label>
+                        <input type="text" id="away-team" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="away-logo">Foto Logo Away</label>
+                        <input type="file" id="away-logo" accept="image/*">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="away-score">Skor Away</label>
+                        <input type="number" id="away-score" min="0" value="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="match-status">Status Pertandingan</label>
+                        <select id="match-status">
+                            <option value="FT">SELESAI (FT)</option>
+                            <option value="LIVE">LIVE</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="match-date">Waktu / Keterangan</label>
+                        <input type="text" id="match-date" placeholder="Contoh: 24 Agustus 2026 - 20:00 WIB" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="btn-save">Simpan Pertandingan</button>
+                    <button type="button" class="btn-cancel" id="btn-cancel" onclick="resetForm()">Batal</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Daftar Pertandingan -->
+        <div id="match-container"></div>
+    </div>
+
+    <script>
+        // Logo default jika pengguna tidak mengunggah foto
+        const DEFAULT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3C/svg%3E";
+
+        // Array penyimpanan data (Read/Update/Delete beroperasi pada array ini)
+        let matches = [
+            {
+                homeTeam: "Persib",
+                homeLogo: DEFAULT_LOGO,
+                homeScore: 2,
+                awayTeam: "Persija",
+                awayLogo: DEFAULT_LOGO,
+                awayScore: 1,
+                status: "FT",
+                date: "24 Agustus 2026 - 15:30 WIB"
+            }
+        ];
+
+        // RENDER / READ DATA
+        function renderMatches() {
+            const container = document.getElementById('match-container');
+            container.innerHTML = '';
+
+            if (matches.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#777;">Belum ada data pertandingan.</p>';
+                return;
+            }
+
+            matches.forEach((match, index) => {
+                const statusClass = match.status === 'LIVE' ? 'status live' : 'status ft';
+                const statusLabel = match.status === 'LIVE' ? '🔴 LIVE' : 'SELESAI';
+
+                const cardHTML = `
+                    <div class="match-card">
+                        <div class="match-content">
+                            <div class="team">
+                                <img src="${match.homeLogo}" alt="${match.homeTeam}">
+                                <div class="team-name">${match.homeTeam}</div>
+                            </div>
+                            <div class="score-board">
+                                <div class="score">${match.homeScore} - ${match.awayScore}</div>
+                                <div class="${statusClass}">${statusLabel}</div>
+                                <div class="date">${match.date}</div>
+                            </div>
+                            <div class="team">
+                                <img src="${match.awayLogo}" alt="${match.awayTeam}">
+                                <div class="team-name">${match.awayTeam}</div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-edit" onclick="editMatch(${index})">Edit</button>
+                            <button class="btn-delete" onclick="deleteMatch(${index})">Hapus</button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        // FUNGSI UNTUK MEMBACA FILE FOTO MENJADI DATA URL (BASE64)
+        function convertFileToBase64(fileInput) {
+            return new Promise((resolve) => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    resolve(null);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // CREATE & UPDATE DATA
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const editIndex = parseInt(document.getElementById('edit-index').value);
+            const homeTeam = document.getElementById('home-team').value;
+            const awayTeam = document.getElementById('away-team').value;
+            const homeScore = parseInt(document.getElementById('home-score').value);
+            const awayScore = parseInt(document.getElementById('away-score').value);
+            const status = document.getElementById('match-status').value;
+            const date = document.getElementById('match-date').value;
+
+            // Membaca file gambar dari input
+            const homeLogoFile = await convertFileToBase64(document.getElementById('home-logo'));
+            const awayLogoFile = await convertFileToBase64(document.getElementById('away-logo'));
+
+            if (editIndex === -1) {
+                // Modus CREATE (Tambah Baru)
+                const newMatch = {
+                    homeTeam,
+                    homeLogo: homeLogoFile || DEFAULT_LOGO,
+                    homeScore,
+                    awayTeam,
+                    awayLogo: awayLogoFile || DEFAULT_LOGO,
+                    awayScore,
+                    status,
+                    date
+                };
+                matches.unshift(newMatch);
+            } else {
+                // Modus UPDATE (Perbarui Data yang Ada)
+                matches[editIndex].homeTeam = homeTeam;
+                matches[editIndex].awayTeam = awayTeam;
+                matches[editIndex].homeScore = homeScore;
+                matches[editIndex].awayScore = awayScore;
+                matches[editIndex].status = status;
+                matches[editIndex].date = date;
+
+                // Jika pengguna mengunggah foto baru saat edit, perbarui logonya
+                if (homeLogoFile) matches[editIndex].homeLogo = homeLogoFile;
+                if (awayLogoFile) matches[editIndex].awayLogo = awayLogoFile;
+            }
+
+            resetForm();
+            renderMatches();
+        }
+
+        // EDIT PREPARATION
+        function editMatch(index) {
+            const match = matches[index];
+
+            document.getElementById('edit-index').value = index;
+            document.getElementById('home-team').value = match.homeTeam;
+            document.getElementById('away-team').value = match.awayTeam;
+            document.getElementById('home-score').value = match.homeScore;
+            document.getElementById('away-score').value = match.awayScore;
+            document.getElementById('match-status').value = match.status;
+            document.getElementById('match-date').value = match.date;
+
+            document.getElementById('form-title').textContent = "Edit Pertandingan";
+            document.getElementById('btn-save').textContent = "Perbarui Data";
+            document.getElementById('btn-cancel').style.display = "inline-block";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // DELETE DATA
+        function deleteMatch(index) {
+            if (confirm("Apakah Anda yakin ingin menghapus data pertandingan ini?")) {
+                matches.splice(index, 1);
+                renderMatches();
+            }
+        }
+
+        // RESET FORM
+        function resetForm() {
+            document.getElementById('match-form').reset();
+            document.getElementById('edit-index').value = "-1";
+            document.getElementById('form-title').textContent = "Tambah Pertandingan Baru";
+            document.getElementById('btn-save').textContent = "Simpan Pertandingan";
+            document.getElementById('btn-cancel').style.display = "none";
+        }
+
+        // Inisialisasi tampilan awal
+        renderMatches();
+    </script>
+</body>
+</html>
